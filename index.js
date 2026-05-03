@@ -206,6 +206,6 @@ app.get("/v1/doctors/:id/slots", async (req, res) => {
   }
 });
 
-app.listen(3002, () => {
-  console.log("Doctor Service running on port 3002");
+app.listen(3001, () => {
+  console.log("Doctor Service running on port 3001");
 });

@@ -7,6 +7,9 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 3002
+# 🔥 ADD THIS LINE
+RUN npx prisma generate
+
+EXPOSE 3001
 
 CMD ["npx", "nodemon", "index.js"]

@@ -15,4 +15,16 @@ model Doctor {
   department     String
   specialization String
   created_at     DateTime @default(now())
+
+ 
+  slots          DoctorSlot[]
+}
+
+model DoctorSlot {
+  slot_id    Int      @id @default(autoincrement())
+  doctor_id  Int
+  start_time DateTime
+  end_time   DateTime
+
+  doctor Doctor @relation(fields: [doctor_id], references: [doctor_id])
 }

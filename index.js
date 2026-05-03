@@ -25,13 +25,7 @@ app.post("/v1/doctors", async (req, res) => {
     }
 
     const doctor = await prisma.doctor.create({
-      data: {
-        name,
-        email,
-        phone,
-        department,
-        specialization,
-      },
+      data: { name, email, phone, department, specialization },
     });
 
     res.status(201).json(doctor);
@@ -44,7 +38,7 @@ app.post("/v1/doctors", async (req, res) => {
   }
 });
 
-/* Get Doctors (Department Filter + Pagination) */
+/* Get Doctors (Filter + Pagination) */
 app.get("/v1/doctors", async (req, res) => {
   try {
     let { department = "", page = 1, size = 10 } = req.query;
@@ -141,6 +135,71 @@ app.delete("/v1/doctors/:id", async (req, res) => {
   } catch (err) {
     res.status(500).json({
       code: "DELETE_FAILED",
+      message: err.message,
+      correlationId: Date.now().toString(),
+    });
+  }
+});
+
+
+// ================== SCHEDULING ==================
+
+/* Create Slot (with conflict check) */
+app.post("/v1/doctors/:id/slots", async (req, res) => {
+  try {
+    const doctor_id = parseInt(req.params.id);
+    const { start_time, end_time } = req.body;
+
+    const overlap = await prisma.doctorSlot.findFirst({
+      where: {
+        doctor_id,
+        AND: [
+          { start_time: { lt: new Date(end_time) } },
+          { end_time: { gt: new Date(start_time) } },
+        ],
+      },
+    });
+
+    if (overlap) {
+      return res.status(400).json({
+        code: "SLOT_CONFLICT",
+        message: "Time slot overlaps with existing slot",
+        correlationId: Date.now().toString(),
+      });
+    }
+
+    const slot = await prisma.doctorSlot.create({
+      data: {
+        doctor_id,
+        start_time: new Date(start_time),
+        end_time: new Date(end_time),
+      },
+    });
+
+    res.status(201).json(slot);
+  } catch (err) {
+    res.status(500).json({
+      code: "SLOT_CREATE_FAILED",
+      message: err.message,
+      correlationId: Date.now().toString(),
+    });
+  }
+});
+
+/* Get Slots */
+app.get("/v1/doctors/:id/slots", async (req, res) => {
+  try {
+    const doctor_id = parseInt(req.params.id);
+
+    const slots = await prisma.doctorSlot.findMany({
+      where: { doctor_id },
+      orderBy: { start_time: "asc" },
+    });
+
+    res.json(slots);
+  } catch (err) {
+    res.status(500).json({
+      code: "FETCH_SLOTS_FAILED",
       message: err.message,
       correlationId: Date.now().toString(),
     });
